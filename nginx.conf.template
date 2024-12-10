@@ -1,0 +1,47 @@
+worker_processes 1;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include      mime.types;
+    default_type application/octet-stream;
+
+    sendfile          on;
+    keepalive_timeout 65;
+
+    upstream ezneis_fastapi {
+        server ezneis_fastapi:63149;
+    }
+
+    upstream ezneis_fastapi_app {
+        server ezneis_fastapi_app:63150;
+    }
+
+    server {
+        listen 80;
+        server_name ${DOMAIN} www.${DOMAIN};
+
+        location / {
+            proxy_pass http://ezneis_fastapi_app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name api.${DOMAIN};
+
+        location / {
+            proxy_pass http://ezneis_fastapi;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
